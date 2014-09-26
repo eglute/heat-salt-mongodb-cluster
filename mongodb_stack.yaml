@@ -217,79 +217,79 @@ resources:
           mine_interval: 1
 
         /srv/pillar/mongodb.sls: |
-		  mongodb:
-		    use_ppa: False
-		    version: 2.6.4
-		    package_name: mongodb-org
-		    mongo_directory: /mongodb
-		    inclue_tools: True
-		    manage_replica_set: True
-		    reconfigure_replica_set: False
-		    config_svr: False
-		    shard_svr: True
-		    settings:
-		      db_path: /mongodb/data
-		      bind_ip: {{ salt['grains.get']('ip_interfaces:eth0')[0] }}
-		      log_path: /mongodb/log
-		      log_append: True
-		      rest: True
-		  mongos:
-		    use_ppa: False
-		    version: 2.6.4
-		    package_name: mongodb-org-mongos
-		    settings:
-		      log_file: /mongodb/log/mongos.log
-		      config_svrs: "23.253.107.118:27017,23.253.72.87:27017,23.253.72.232:27017"
-		
+          mongodb:
+            use_ppa: False
+            version: 2.6.4
+            package_name: mongodb-org
+            mongo_directory: /mongodb
+            inclue_tools: True
+            manage_replica_set: True
+            reconfigure_replica_set: False
+            config_svr: False
+            shard_svr: True
+            settings:
+              db_path: /mongodb/data
+              bind_ip: {{ salt['grains.get']('ip_interfaces:eth0')[0] }}
+              log_path: /mongodb/log
+              log_append: True
+              rest: True
+          mongos:
+            use_ppa: False
+            version: 2.6.4
+            package_name: mongodb-org-mongos
+            settings:
+              log_file: /mongodb/log/mongos.log
+              config_svrs: "23.253.107.118:27017,23.253.72.87:27017,23.253.72.232:27017"
+
         /srv/pillar/mongos.sls: |
-			mongodb:
-			  use_ppa: False
-			  version: 2.6.4
-			  package_name: mongodb-org
-			  mongo_directory: /mongodb
-			  inclue_tools: True
-			  manage_replica_set: False
-			  reconfigure_replica_set: False
-			  config_svr: False
-			  shard_svr: False
-			  settings:
-			    db_path: /mongodb/data
-			    bind_ip: {{ salt['grains.get']('ip_interfaces:eth0')[0] }}
-			    log_path: /mongodb/log
-			    log_append: True
-			    rest: True
+          mongodb:
+            use_ppa: False
+            version: 2.6.4
+            package_name: mongodb-org
+            mongo_directory: /mongodb
+            inclue_tools: True
+            manage_replica_set: False
+            reconfigure_replica_set: False
+            config_svr: False
+            shard_svr: False
+            settings:
+              db_path: /mongodb/data
+              bind_ip: {{ salt['grains.get']('ip_interfaces:eth0')[0] }}
+              log_path: /mongodb/log
+              log_append: True
+              rest: True
 
-			mongos:
-			  version: 2.6.4
-			  package_name: mongodb-org-mongos
-			  settings:
-			    log_file: /mongodb/log/mongos.log
-			    config_svrs: "23.253.107.118:27017,23.253.72.87:27017,23.253.72.232:27017"
-			
-		/srv/pillar/mongoconfigsrv.sls |
-		  mongodb:
-			  use_ppa: False
-			  version: 2.6.4
-			  package_name: mongodb-org
-			  mongo_directory: /mongodb
-			  inclue_tools: True
-			  manage_replica_set: False
-			  reconfigure_replica_set: False
-			  config_svr: True
-			  settings:
-			    bind_ip: {{ salt['grains.get']('ip_interfaces:eth0')[0] }}
-			    db_path: /mongodb/data
-			    log_path: /mongodb/log
-			    log_append: True
-			    rest: True
+          mongos:
+            version: 2.6.4
+            package_name: mongodb-org-mongos
+            settings:
+              log_file: /mongodb/log/mongos.log
+              config_svrs: "23.253.107.118:27017,23.253.72.87:27017,23.253.72.232:27017"
 
-			mongos:
-			  use_ppa: False
-			  version: 2.6.4
-			  package_name: mongodb-org-mongos
-			  settings:
-			    log_file: /mongodb/log/mongos.log
-			    config_svrs: "23.253.107.118:27017,23.253.72.87:27017,23.253.72.232:27017"
+        /srv/pillar/mongoconfigsrv.sls: |
+          mongodb:
+            use_ppa: False
+            version: 2.6.4
+            package_name: mongodb-org
+            mongo_directory: /mongodb
+            inclue_tools: True
+            manage_replica_set: False
+            reconfigure_replica_set: False
+            config_svr: True
+            settings:
+              bind_ip: {{ salt['grains.get']('ip_interfaces:eth0')[0] }}
+              db_path: /mongodb/data
+              log_path: /mongodb/log
+              log_append: True
+              rest: True
+
+          mongos:
+            use_ppa: False
+            version: 2.6.4
+            package_name: mongodb-org-mongos
+            settings:
+              log_file: /mongodb/log/mongos.log
+              config_svrs: "23.253.107.118:27017,23.253.72.87:27017,23.253.72.232:27017"
 
       networks:
         - port:
