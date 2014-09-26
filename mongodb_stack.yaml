@@ -162,7 +162,7 @@ resources:
             - egle-key
             - public_key
         state_repos: |
-		  https://github.com/eglute/mongomongodb-formula.git
+          https://github.com/eglute/mongodb-formula.git
       config:
         get_resource: config-salt-master
       server:
