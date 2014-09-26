@@ -349,7 +349,7 @@ resources:
     type: OS::Nova::Server
     depends_on: interface
     properties:
-    flavor: m1.small
+      flavor: m1.small
       image:
         get_param: image
       personality: 
