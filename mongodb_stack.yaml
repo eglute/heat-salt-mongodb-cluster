@@ -42,7 +42,7 @@ resources:
   subnet:
     type: OS::Neutron::Subnet
     properties:
-      network-id:
+      network_id:
         get_resource: net
       cidr: 10.10.10.0/24
       dns_nameservers:
@@ -53,7 +53,7 @@ resources:
     type: OS::Neutron::Router
     properties:
       external_gateway_info:
-        network-id: 
+        network: 
           get_param: floating-network-id
 
   interface:
@@ -323,7 +323,7 @@ resources:
               - public_key
           image:
             get_param: image
-          network-id:
+          network:
             get_resource: net
           master:
             get_attr:
@@ -349,11 +349,9 @@ resources:
     type: OS::Nova::Server
     depends_on: interface
     properties:
-      image: 
+    flavor: m1.small
+      image:
         get_param: image
-
-      flavor:
-        get_param: flavor
       personality: 
         /root/.ssh/egle-key_rsa:
           get_attr:
@@ -409,7 +407,7 @@ resources:
           roles:
             - mongodb
       networks:
-        - network-id:
+        - network:
             get_resource: net
       user_data_format: SOFTWARE_CONFIG
 
