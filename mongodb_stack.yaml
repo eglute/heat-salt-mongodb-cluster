@@ -9,14 +9,14 @@ parameters:
   image:
     type: string
     description: Image name
-  floating-network:
+  floating-network-id:
     type: string
-    description: Network to allocate floating IP from. 
+    description: UUID of the external network. The private network created by this stack will route to this network. Also, any floating ip's needed by this stack will come this network. 
   egle-key-key-name:
     type: string
     default: egle-key
     label: Stack communication key name
-    description: Name of the keypair that will be created for node-to-node communication within the stack.
+    description: Unique name of the keypair for node to node communications within the stack.
   minion-count:
     type: number
     default: 2
@@ -27,8 +27,7 @@ resources:
     type: OS::Heat::RandomString
     properties:
       length: 32
-      character_classes:
-        - class: lettersdigits
+      sequence: lettersdigits
 
   egle-key:
     type: OS::Nova::KeyPair
@@ -43,7 +42,7 @@ resources:
   subnet:
     type: OS::Neutron::Subnet
     properties:
-      network:
+      network-id:
         get_resource: net
       cidr: 10.10.10.0/24
       dns_nameservers:
@@ -54,8 +53,8 @@ resources:
     type: OS::Neutron::Router
     properties:
       external_gateway_info:
-        network: 
-          get_param: floating-network
+        network-id: 
+          get_param: floating-network-id
 
   interface:
     type: OS::Neutron::RouterInterface
@@ -68,8 +67,8 @@ resources:
   master-ip:
     type: OS::Neutron::FloatingIP
     properties:
-      floating_network: 
-        get_param: floating-network
+      floating_network_id: 
+        get_param: floating-network-id
 
   master-port:
     type: OS::Neutron::Port
@@ -324,7 +323,7 @@ resources:
               - public_key
           image:
             get_param: image
-          network:
+          network-id:
             get_resource: net
           master:
             get_attr:
@@ -337,8 +336,8 @@ resources:
   minion-mongoconfigsrv-ip:
     type: OS::Neutron::FloatingIP
     properties:
-      floating_network: 
-        get_param: floating-network
+      floating_network_id: 
+        get_param: floating-network-id
 
   minion-mongoconfigsrv-port:
     type: OS::Neutron::Port
@@ -350,9 +349,9 @@ resources:
     type: OS::Nova::Server
     depends_on: interface
     properties:
+    flavor: m1.small
       image:
         get_param: image
-      flavor: m1.small
       personality: 
         /root/.ssh/egle-key_rsa:
           get_attr:
@@ -408,7 +407,7 @@ resources:
           roles:
             - mongodb
       networks:
-        - network:
+        - network-id:
             get_resource: net
       user_data_format: SOFTWARE_CONFIG
 
@@ -459,17 +458,7 @@ outputs:
       get_attr:
         - master-ip
         - floating_ip_address
-  master-stdout:
-    value:
-      get_attr:
-       - deploy-salt-master
-       - deploy_stdout
-  master-stderr:
-    value:
-      get_attr:
-        - deploy-salt-master
-        - deploy_stderr
-  minion-ip:
+  minion-web-ips:
     value:
       get_attr:
         - minion-group-mongos
