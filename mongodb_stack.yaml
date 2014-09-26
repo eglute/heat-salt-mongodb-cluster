@@ -12,9 +12,9 @@ parameters:
   floating-network-id:
     type: string
     description: UUID of the external network. The private network created by this stack will route to this network. Also, any floating ip's needed by this stack will come this network. 
-  egle-key-key-name:
+  coms-key-name:
     type: string
-    default: egle-key
+    default: coms
     label: Stack communication key name
     description: Unique name of the keypair for node to node communications within the stack.
   minion-count:
@@ -29,11 +29,11 @@ resources:
       length: 32
       sequence: lettersdigits
 
-  egle-key:
+  coms:
     type: OS::Nova::KeyPair
     properties:
       name:
-        get_param: egle-key-key-name
+        get_param: coms-key-name
       save_private_key: true 
 
   net:
@@ -85,10 +85,10 @@ resources:
         - name: state_repos
       config: |
         #!/bin/bash
-        chmod 0700 /root/.ssh/egle-key_rsa
+        chmod 0700 /root/.ssh/coms_rsa
         chmod 0600 /srv/pillar/mongodb.sls
 
-        # Add egle-key from minions to master
+        # Add coms from minions to master
         echo "$public_key" >> /root/.ssh/authorized_keys
 
         # Install git
@@ -121,9 +121,9 @@ resources:
         - name: master
       config: |
         #!/bin/bash
-        chmod 0700 /root/.ssh/egle-key_rsa
+        chmod 0700 /root/.ssh/coms_rsa
             
-        # Add egle-key from minions to master
+        # Add coms from minions to master
         echo "$public_key" >> /root/.ssh/authorized_keys
 
         # Install salt minion
@@ -144,13 +144,13 @@ resources:
 
         cp $MINION_PKI_PATH /root/minion_key
 
-        scp -i /root/.ssh/egle-key_rsa /root/minion_key root@$master:/tmp/$HOSTNAME
+        scp -i /root/.ssh/coms_rsa /root/minion_key root@$master:/tmp/$HOSTNAME
 
-        ssh -i /root/.ssh/egle-key_rsa root@$master "mv /tmp/$HOSTNAME $MASTER_PKI_PATH$HOSTNAME; chmod 700 $MASTER_PKI_PATH$HOSTNAME; rm $MASTER_PKI_PATH_PRE$HOSTNAME"
+        ssh -i /root/.ssh/coms_rsa root@$master "mv /tmp/$HOSTNAME $MASTER_PKI_PATH$HOSTNAME; chmod 700 $MASTER_PKI_PATH$HOSTNAME; rm $MASTER_PKI_PATH_PRE$HOSTNAME"
 
         service salt-minion restart
         rm /root/minion_key
-        rm /root/.ssh/egle-key_rsa
+        rm /root/.ssh/coms_rsa
 
   deploy-salt-master:
     type: OS::Heat::SoftwareDeployment
@@ -158,7 +158,7 @@ resources:
       input_values:
         public_key:
           get_attr:
-            - egle-key
+            - coms
             - public_key
         state_repos: |
           https://github.com/eglute/mongodb-formula.git
@@ -178,9 +178,9 @@ resources:
       flavor: m1.small
       name: master
       personality:
-        /root/.ssh/egle-key_rsa:
+        /root/.ssh/coms_rsa:
           get_attr:
-            - egle-key
+            - coms
             - private_key
 
         /srv/salt/top.sls: |
@@ -315,11 +315,11 @@ resources:
           flavor: m1.small
           private_key:
             get_attr:
-              - egle-key
+              - coms
               - private_key
           public_key:
             get_attr:
-              - egle-key
+              - coms
               - public_key
           image:
             get_param: image
@@ -353,9 +353,9 @@ resources:
       image:
         get_param: image
       personality: 
-        /root/.ssh/egle-key_rsa:
+        /root/.ssh/coms_rsa:
           get_attr:
-            - egle-key
+            - coms
             - private_key
         /etc/salt/grains: |
           roles:
@@ -380,7 +380,7 @@ resources:
       input_values:
         public_key:
           get_attr:
-            - egle-key
+            - coms
             - public_key
         master:
           get_attr:
@@ -399,9 +399,9 @@ resources:
         get_param: image
       flavor: m1.small
       personality: 
-        /root/.ssh/egle-key_rsa:
+        /root/.ssh/coms_rsa:
           get_attr:
-            - egle-key
+            - coms
             - private_key
         /etc/salt/grains: |
           roles:
@@ -418,7 +418,7 @@ resources:
       input_values:
         public_key:
           get_attr:
-            - egle-key
+            - coms
             - public_key
         master:
           get_attr:
