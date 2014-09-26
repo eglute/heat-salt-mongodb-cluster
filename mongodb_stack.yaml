@@ -349,9 +349,11 @@ resources:
     type: OS::Nova::Server
     depends_on: interface
     properties:
-    flavor: m1.small
-      image:
+      image: 
         get_param: image
+
+      flavor:
+        get_param: flavor
       personality: 
         /root/.ssh/egle-key_rsa:
           get_attr:
