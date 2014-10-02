@@ -108,7 +108,7 @@ resources:
                 git clone $line
             fi
         done <<< "$state_repos"
-
+        mv mongodb-formula/mongodb/ mongodb
         # Finally - Restart salt service
         service salt-master restart
 
@@ -176,7 +176,7 @@ resources:
       image: 
         get_param: image
       flavor: m1.small
-      name: master
+      name: master1
       personality:
         /root/.ssh/coms_rsa:
           get_attr:
@@ -187,14 +187,13 @@ resources:
           base:
             'roles:mongodb':
               - match: grain
-              - mongodb.mongodb
+              - mongodb
             'roles:mongos':
               - match: grain
               - mongodb.mongos
-              - sync
             'roles:mongoconfigsrv':
               - match: grain
-              - mongodb.mongoconfigsrv
+              - mongodb
 
         /srv/pillar/top.sls: |
           base:
@@ -206,6 +205,10 @@ resources:
             'roles:mongodb':
               - match: grain
               - mongodb
+            'roles:mongoconfigsrv':
+              - match: grain
+              - mongoconfigsrv
+              
         /srv/pillar/app.sls: |
           interfaces:
             private: eth0
@@ -257,7 +260,6 @@ resources:
               log_path: /mongodb/log
               log_append: True
               rest: True
-
           mongos:
             version: 2.6.4
             package_name: mongodb-org-mongos
@@ -332,6 +334,37 @@ resources:
           minion-config:
             get_resource: config-salt-minion
           minion-roles: "mongos"
+
+  minion-group-mongoconfigsrv:
+    type: OS::Heat::ResourceGroup
+    depends_on: deploy-salt-master
+    properties:
+      count:
+        get_param: minion-count
+      resource_def:
+        type: Salt::Minion
+        properties:
+          flavor: m1.small
+          private_key:
+            get_attr:
+              - coms
+              - private_key
+          public_key:
+            get_attr:
+              - coms
+              - public_key
+          image:
+            get_param: image
+          network:
+            get_resource: net
+          master:
+            get_attr:
+              - master
+              - first_address
+          minion-config:
+            get_resource: config-salt-minion
+          minion-roles: "mongoconfigsrv"
+
 
   minion-mongoconfigsrv-ip:
     type: OS::Neutron::FloatingIP
@@ -448,9 +481,10 @@ resources:
         get_resource: master
     depends_on:
       - deploy-salt-master
-      - minion-group-mongos
+      - minion-group-mongoconfigsrv
       - deploy-mongodb
-      - deploy-mongoconfigsrv
+      - minion-group-mongos
+      
 
 outputs:
   master-ip:
@@ -461,15 +495,18 @@ outputs:
   minion-web-ips:
     value:
       get_attr:
+        - minion-group-mongoconfigsrv
         - minion-group-mongos
         - minion-ip
   minion-stdout:
     value:
       get_attr:
+        - minion-group-mongoconfigsrv
         - minion-group-mongos
         - minion-stdout
   minion-stderr:
     value:
       get_attr:
+        - minion-group-mongoconfigsrv
         - minion-group-mongos
         - minion-stderr
