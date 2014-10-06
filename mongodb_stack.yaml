@@ -17,10 +17,17 @@ parameters:
     default: coms
     label: Stack communication key name
     description: Unique name of the keypair for node to node communications within the stack.
-  minion-count:
+  minion-count-mongos:
     type: number
-    default: 2
-    label: Number of salt minions
+    default: 1
+    label: Number of mongos
+    description: How many mongos will be required.
+  minion-count-mongodb:
+    type: number
+    default: 3
+    label: Number of mongod servers
+    description: How many mongod servers will be in a cluster.       
+
 
 resources:
   secret:
@@ -35,7 +42,7 @@ resources:
       name:
         get_param: coms-key-name
       save_private_key: true 
-
+      
   net:
     type: OS::Neutron::Net
 
@@ -87,6 +94,8 @@ resources:
         #!/bin/bash
         chmod 0700 /root/.ssh/coms_rsa
         chmod 0600 /srv/pillar/mongodb.sls
+        chmod 0600 /srv/pillar/mongos.sls
+        chmod 0600 /srv/pillar/mongoconfigsrv.sls
 
         # Add coms from minions to master
         echo "$public_key" >> /root/.ssh/authorized_keys
@@ -108,6 +117,7 @@ resources:
                 git clone $line
             fi
         done <<< "$state_repos"
+        # workaround for nested mongodb repo
         mv mongodb-formula/mongodb/ mongodb
         # Finally - Restart salt service
         service salt-master restart
@@ -190,6 +200,7 @@ resources:
               - mongodb
             'roles:mongos':
               - match: grain
+              - mongodb
               - mongodb.mongos
             'roles:mongoconfigsrv':
               - match: grain
@@ -241,7 +252,6 @@ resources:
             package_name: mongodb-org-mongos
             settings:
               log_file: /mongodb/log/mongos.log
-              config_svrs: "23.253.107.118:27017,23.253.72.87:27017,23.253.72.232:27017"
 
         /srv/pillar/mongos.sls: |
           mongodb:
@@ -265,7 +275,6 @@ resources:
             package_name: mongodb-org-mongos
             settings:
               log_file: /mongodb/log/mongos.log
-              config_svrs: "23.253.107.118:27017,23.253.72.87:27017,23.253.72.232:27017"
 
         /srv/pillar/mongoconfigsrv.sls: |
           mongodb:
@@ -290,7 +299,6 @@ resources:
             package_name: mongodb-org-mongos
             settings:
               log_file: /mongodb/log/mongos.log
-              config_svrs: "23.253.107.118:27017,23.253.72.87:27017,23.253.72.232:27017"
 
       networks:
         - port:
@@ -304,43 +312,12 @@ resources:
         get_resource: master-ip
       port_id:
         get_resource: master-port
-
-  minion-group-mongos:
-    type: OS::Heat::ResourceGroup
-    depends_on: deploy-salt-master
-    properties:
-      count:
-        get_param: minion-count
-      resource_def:
-        type: Salt::Minion
-        properties:
-          flavor: m1.small
-          private_key:
-            get_attr:
-              - coms
-              - private_key
-          public_key:
-            get_attr:
-              - coms
-              - public_key
-          image:
-            get_param: image
-          network:
-            get_resource: net
-          master:
-            get_attr:
-              - master
-              - first_address
-          minion-config:
-            get_resource: config-salt-minion
-          minion-roles: "mongos"
-
+  
   minion-group-mongoconfigsrv:
     type: OS::Heat::ResourceGroup
     depends_on: deploy-salt-master
     properties:
-      count:
-        get_param: minion-count
+      count: 3
       resource_def:
         type: Salt::Minion
         properties:
@@ -365,7 +342,66 @@ resources:
             get_resource: config-salt-minion
           minion-roles: "mongoconfigsrv"
 
+  minion-group-mongodb:
+    type: OS::Heat::ResourceGroup
+    depends_on: deploy-salt-master
+    properties:
+      count:
+        get_param: minion-count-mongodb
+      resource_def:
+        type: Salt::Minion
+        properties:
+          flavor: m1.small
+          private_key:
+            get_attr:
+              - coms
+              - private_key
+          public_key:
+            get_attr:
+              - coms
+              - public_key
+          image:
+            get_param: image
+          network:
+            get_resource: net
+          master:
+            get_attr:
+              - master
+              - first_address
+          minion-config:
+            get_resource: config-salt-minion
+          minion-roles: "mongodb"
 
+  minion-group-mongos:
+    type: OS::Heat::ResourceGroup
+    depends_on: deploy-salt-master
+    properties:
+      count:
+        get_param: minion-count-mongos
+      resource_def:
+        type: Salt::Minion
+        properties:
+          flavor: m1.small
+          private_key:
+            get_attr:
+              - coms
+              - private_key
+          public_key:
+            get_attr:
+              - coms
+              - public_key
+          image:
+            get_param: image
+          network:
+            get_resource: net
+          master:
+            get_attr:
+              - master
+              - first_address
+          minion-config:
+            get_resource: config-salt-minion
+          minion-roles: "mongos"
+          
   minion-mongoconfigsrv-ip:
     type: OS::Neutron::FloatingIP
     properties:
@@ -378,26 +414,7 @@ resources:
       network_id: 
         get_resource: net
 
-  minion-mongoconfigsrv:
-    type: OS::Nova::Server
-    depends_on: interface
-    properties:
-      flavor: m1.small
-      image:
-        get_param: image
-      personality: 
-        /root/.ssh/coms_rsa:
-          get_attr:
-            - coms
-            - private_key
-        /etc/salt/grains: |
-          roles:
-            - mongoconfigsrv
-      networks:
-        - port:
-            get_resource: minion-mongoconfigsrv-port
-      user_data_format: SOFTWARE_CONFIG
-
+  
   minion-mongoconfigsrv-floating-ip-ass: 
     type: OS::Neutron::FloatingIPAssociation
     properties: 
@@ -405,62 +422,6 @@ resources:
         get_resource: minion-mongoconfigsrv-ip
       port_id:
         get_resource: minion-mongoconfigsrv-port
-
-  deploy-mongoconfigsrv:
-    type: OS::Heat::SoftwareDeployment
-    depends_on: deploy-salt-master
-    properties:
-      input_values:
-        public_key:
-          get_attr:
-            - coms
-            - public_key
-        master:
-          get_attr:
-            - master
-            - first_address
-      config:
-        get_resource: config-salt-minion
-      server:
-        get_resource: minion-mongoconfigsrv
- 
-  minion-mongodb:
-    type: OS::Nova::Server
-    depends_on: interface
-    properties:
-      image:
-        get_param: image
-      flavor: m1.small
-      personality: 
-        /root/.ssh/coms_rsa:
-          get_attr:
-            - coms
-            - private_key
-        /etc/salt/grains: |
-          roles:
-            - mongodb
-      networks:
-        - network:
-            get_resource: net
-      user_data_format: SOFTWARE_CONFIG
-
-  deploy-mongodb:
-    type: OS::Heat::SoftwareDeployment
-    depends_on: deploy-salt-master
-    properties:
-      input_values:
-        public_key:
-          get_attr:
-            - coms
-            - public_key
-        master:
-          get_attr:
-            - master
-            - first_address
-      config:
-        get_resource: config-salt-minion
-      server:
-        get_resource: minion-mongodb
 
   config-deploy:
     type: OS::Heat::SoftwareConfig
@@ -482,7 +443,7 @@ resources:
     depends_on:
       - deploy-salt-master
       - minion-group-mongoconfigsrv
-      - deploy-mongodb
+      - minion-group-mongodb
       - minion-group-mongos
       
 
@@ -496,17 +457,14 @@ outputs:
     value:
       get_attr:
         - minion-group-mongoconfigsrv
-        - minion-group-mongos
         - minion-ip
   minion-stdout:
     value:
       get_attr:
         - minion-group-mongoconfigsrv
-        - minion-group-mongos
         - minion-stdout
   minion-stderr:
     value:
       get_attr:
         - minion-group-mongoconfigsrv
-        - minion-group-mongos
         - minion-stderr
