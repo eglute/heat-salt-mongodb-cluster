@@ -26,22 +26,38 @@ parameters:
     type: number
     default: 3
     label: Number of mongod servers
-    description: How many mongod servers will be in a cluster.       
+    description: How many mongod servers will be in a cluster.
 
 
 resources:
+    
+  # Random string to aid in naming things.
+  stack-string:
+    type: OS::Heat::RandomString
+    properties:
+      length: 6
+      sequence: lettersdigits
+      
   secret:
     type: OS::Heat::RandomString
     properties:
       length: 32
       sequence: lettersdigits
 
+  # Keypair for communicating between nodes within the stack.
+  # Will allow minions to ssh into the master and vice versa.
   coms:
     type: OS::Nova::KeyPair
     properties:
-      name:
-        get_param: coms-key-name
-      save_private_key: true 
+     save_private_key: true
+     name:
+       str_replace:
+         template: mongo-$stackstr-coms
+         params:
+           $stackstr:
+             get_attr:
+               - stack-string
+               - value      
       
   net:
     type: OS::Neutron::Net
@@ -186,7 +202,14 @@ resources:
       image: 
         get_param: image
       flavor: m1.small
-      name: master1
+      name:
+        str_replace:
+          template: mongodb-$stackstr-master
+          params:
+            $stackstr:
+              get_attr:
+                - stack-string
+                - value
       personality:
         /root/.ssh/coms_rsa:
           get_attr:
@@ -322,6 +345,14 @@ resources:
         type: Salt::Minion
         properties:
           flavor: m1.small
+          stack-prefix:
+            str_replace:
+              template: mongo-$stackstr-configsrv
+              params:
+                $stackstr:
+                  get_attr:
+                    - stack-string
+                    - value
           private_key:
             get_attr:
               - coms
@@ -352,6 +383,14 @@ resources:
         type: Salt::Minion
         properties:
           flavor: m1.small
+          stack-prefix:
+            str_replace:
+              template: mongo-$stackstr-mongodb
+              params:
+                $stackstr:
+                  get_attr:
+                    - stack-string
+                    - value
           private_key:
             get_attr:
               - coms
@@ -382,6 +421,14 @@ resources:
         type: Salt::Minion
         properties:
           flavor: m1.small
+          stack-prefix:
+            str_replace:
+              template: mongo-$stackstr-mongos
+              params:
+                $stackstr:
+                  get_attr:
+                    - stack-string
+                    - value
           private_key:
             get_attr:
               - coms
