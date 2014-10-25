@@ -12,11 +12,6 @@ parameters:
   floating-network-id:
     type: string
     description: UUID of the external network. The private network created by this stack will route to this network. Also, any floating ip's needed by this stack will come this network. 
-  coms-key-name:
-    type: string
-    default: coms
-    label: Stack communication key name
-    description: Unique name of the keypair for node to node communications within the stack.
   minion-count-mongos:
     type: number
     default: 1
@@ -413,7 +408,10 @@ resources:
 
   minion-group-mongos:
     type: OS::Heat::ResourceGroup
-    depends_on: deploy-salt-master
+    depends_on: 
+      - deploy-salt-master
+      - minion-group-mongodb
+      - minion-group-mongoconfigsrv
     properties:
       count:
         get_param: minion-count-mongos
