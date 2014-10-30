@@ -22,6 +22,11 @@ parameters:
     default: 3
     label: Number of mongod servers
     description: How many mongod servers will be in a cluster.
+  minion-size-mongodb:
+    type: string
+    default: m1.small
+    label: Flavor of mongod servers
+    description: Flavor (image size) of mongod servers to be created.
 
 
 resources:
@@ -377,7 +382,8 @@ resources:
       resource_def:
         type: Salt::Minion
         properties:
-          flavor: m1.small
+          flavor: 
+            get_param: minion-size-mongodb
           stack-prefix:
             str_replace:
               template: mongo-$stackstr-mongodb
