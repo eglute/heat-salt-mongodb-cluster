@@ -27,6 +27,10 @@ parameters:
     default: m1.small
     label: Flavor of mongod servers
     description: Flavor (image size) of mongod servers to be created.
+  apps-network:
+    type: string
+    label: Network UUID of apps network
+    description: The network UUID of the network your app (Magento, Drupal, etc.) is on.
 
 
 resources:
@@ -177,6 +181,7 @@ resources:
         service salt-minion restart
         rm /root/minion_key
         rm /root/.ssh/coms_rsa
+        /sbin/ifconfig -a | /usr/bin/awk '/eth.*Ethernet/ {print $1}' | while read E; do /usr/bin/sudo /sbin/dhclient $E; done
 
   deploy-salt-master:
     type: OS::Heat::SoftwareDeployment
@@ -424,7 +429,7 @@ resources:
       count:
         get_param: minion-count-mongos
       resource_def:
-        type: Salt::Minion
+        type: Salt::MinionMongos
         properties:
           flavor: m1.small
           stack-prefix:
@@ -454,6 +459,9 @@ resources:
           minion-config:
             get_resource: config-salt-minion
           minion-roles: "mongos"
+          apps-net: 
+            get_param: apps-network
+
           
   minion-mongoconfigsrv-ip:
     type: OS::Neutron::FloatingIP
