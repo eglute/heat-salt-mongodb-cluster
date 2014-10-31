@@ -261,6 +261,7 @@ resources:
             inclue_tools: True
             manage_replica_set: True
             reconfigure_replica_set: False
+            replica_set: rs0
             config_svr: False
             shard_svr: True
             settings:
@@ -496,7 +497,14 @@ resources:
       - minion-group-mongoconfigsrv
       - minion-group-mongodb
       - minion-group-mongos
-      
+
+  config-replication:
+     type: OS::Heat::SoftwareConfig
+     properties:
+       group: script
+       config: |
+         #!/bin/bash
+         sudo salt $(sudo salt -G roles:mongodb test.ping | head -1  | sed 's/://') state.sls mongodb.replication
 
 outputs:
   master-ip:
