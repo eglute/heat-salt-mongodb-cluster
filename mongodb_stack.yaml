@@ -181,7 +181,7 @@ resources:
         service salt-minion restart
         rm /root/minion_key
         rm /root/.ssh/coms_rsa
-        /sbin/ifconfig -a | /usr/bin/awk '/eth.*Ethernet/ {print $1}' | while read E; do /usr/bin/sudo /sbin/dhclient $E; done
+        /sbin/ifconfig -a | grep -v eth0 | /usr/bin/awk '/eth.*Ethernet/ {print $1}' | while read E; do /usr/bin/sudo /sbin/dhclient $E; done
 
   deploy-salt-master:
     type: OS::Heat::SoftwareDeployment
@@ -492,7 +492,9 @@ resources:
         #!/bin/bash
         salt '*' saltutil.refresh_pillar
         salt '*' mine.update
-        salt '*' state.highstate
+        salt -G 'roles:mongoconfigsrv' state.highstate
+        salt -G 'roles:mongodb' state.highstate
+        salt -G 'roles:mongos' state.highstate
 
   deploy:
     type: OS::Heat::SoftwareDeployment
