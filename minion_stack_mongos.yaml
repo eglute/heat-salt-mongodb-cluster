@@ -47,7 +47,7 @@ resources:
     type: OS::Neutron::Port 
     properties:
       network_id: 
-        get_param: apps-network
+        get_param: apps-net
 
   deploy-salt-minion:
     type: OS::Heat::SoftwareDeployment
