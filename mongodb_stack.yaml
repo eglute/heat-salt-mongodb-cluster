@@ -513,7 +513,7 @@ resources:
        group: script
        config: |
          #!/bin/bash
-         sudo salt $(sudo salt -G roles:mongodb test.ping | head -1  | sed 's/://') state.sls mongodb.replication
+         salt -G 'roles:mongodb' state.sls mongodb.replication
   
   deploy-replication:
     type: OS::Heat::SoftwareDeployment
