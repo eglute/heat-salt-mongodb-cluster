@@ -288,6 +288,7 @@ resources:
             reconfigure_replica_set: False
             config_svr: False
             shard_svr: False
+            replica_set: rs0
             settings:
               db_path: /mongodb/data
               bind_ip: {{ salt['grains.get']('ip_interfaces:eth0')[0] }}
@@ -505,6 +506,19 @@ resources:
        config: |
          #!/bin/bash
          sudo salt $(sudo salt -G roles:mongodb test.ping | head -1  | sed 's/://') state.sls mongodb.replication
+  
+  deploy-replication:
+    type: OS::Heat::SoftwareDeployment
+    properties:
+      config:
+        get_resource: config-replication
+      server:
+        get_resource: master
+    depends_on:
+      - deploy-salt-master
+      - minion-group-mongoconfigsrv
+      - minion-group-mongodb
+      - minion-group-mongos
 
 outputs:
   master-ip:
