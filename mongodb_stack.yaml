@@ -517,6 +517,7 @@ resources:
          salt -G 'roles:mongodb' state.highstate
          salt -G 'roles:mongos' state.highstate
          salt -G 'roles:mongodb' state.sls mongodb.replication
+         salt -G 'roles:mongos' state.sls mongodb.mongos.cluster
   
   deploy-replication:
     type: OS::Heat::SoftwareDeployment
