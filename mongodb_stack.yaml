@@ -492,9 +492,7 @@ resources:
         #!/bin/bash
         salt '*' saltutil.refresh_pillar
         salt '*' mine.update
-        salt -G 'roles:mongoconfigsrv' state.highstate
-        salt -G 'roles:mongodb' state.highstate
-        salt -G 'roles:mongos' state.highstate
+        salt '*' state.highstate
 
   deploy:
     type: OS::Heat::SoftwareDeployment
@@ -515,6 +513,9 @@ resources:
        group: script
        config: |
          #!/bin/bash
+         salt -G 'roles:mongoconfigsrv' state.highstate
+         salt -G 'roles:mongodb' state.highstate
+         salt -G 'roles:mongos' state.highstate
          salt -G 'roles:mongodb' state.sls mongodb.replication
   
   deploy-replication:
