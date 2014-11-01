@@ -513,6 +513,7 @@ resources:
        group: script
        config: |
          #!/bin/bash
+         salt '*' mine.update
          salt -G 'roles:mongoconfigsrv' state.highstate
          salt -G 'roles:mongodb' state.highstate
          salt -G 'roles:mongos' state.highstate
@@ -527,10 +528,8 @@ resources:
       server:
         get_resource: master
     depends_on:
-      - deploy-salt-master
-      - minion-group-mongoconfigsrv
-      - minion-group-mongodb
-      - minion-group-mongos
+      - config-deploy
+      - deploy
 
 outputs:
   master-ip:
